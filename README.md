@@ -127,8 +127,8 @@ python paper_algorithm_full_en_v7.py [ACTION FLAGS] [OPTIONS]
 | Flag | Description |
 |------|--------------|
 | `--engine {tinc,lex,rev}` | Interval order / engine (default: `tinc`) |
-| `--n <int>` | |L_n| — number of α-cuts / levels |
-| `--m <int>` | |Y_m| — discrete grid for endpoints |
+| `--n <int>` | cardinal(L_n) — number of alpha-cuts / levels |
+| `--m <int>` | cardinal(Y_m) — discrete grid for endpoints |
 | `--index-base {0,1}` | Indexing base for `pos` / `unpos` (default: 0) |
 | `--seed <int>` | RNG seed for reproducibility |
 | `--quiet` | Less verbose output |
