@@ -6,7 +6,7 @@
 
 This repository contains the **reference Python implementation** of the algorithms proposed in the paper:
 
-> **"Ranking and Unranking of Discrete Fuzzy Numbers via α-cuts and Interval Orders"**
+> **"An Efficient Computational Framework for Discrete Fuzzy Numbers Based on Admissible Orders"**
 
 The goal of this work is to establish a **bijective mapping** between *Discrete Fuzzy Numbers (DFNs)* and a contiguous integer index set  
 \[
@@ -52,7 +52,7 @@ The repository allows you to plug in any order that satisfies monotonicity and c
 ## ⚙️ Features
 
 ✅ Exact **ranking (pos)** and **unranking (pos⁻¹)** of DFNs  
-✅ Works with **any admissible interval order** (default: *t-inc*)  
+✅ Works with **any admissible interval order** (default: *t-inc*, implemented: *t-inc*, *lex1*, *lex2*)  
 ✅ Efficient computation via **α-cut decomposition**  
 ✅ Support for **0-based or 1-based indexing**  
 ✅ **Bidirectional** consistency guaranteed:  
