@@ -115,76 +115,172 @@ The algorithms are based on the following principles:
 > All commands run from the repo root.  
 > Main entry point: `paper_algorithm_full_en_v7.py`  
 
-### General form
-``
+
+```bash
 python paper_algorithm_full_en_v7.py [ACTION FLAGS] [OPTIONS]
-``
+```
 
-### Common options
---engine {tinc,lex,rev} # Interval order / engine (default: tinc)
+---
 
---n <int> # |L_n| (number of α-cuts / levels)
+## ⚙️ Common Options
 
---m <int> # |Y_m| (discrete grid for endpoints)
+| Flag | Description |
+|------|--------------|
+| `--engine {tinc,lex,rev}` | Interval order / engine (default: `tinc`) |
+| `--n <int>` | |Lₙ| — number of α-cuts / levels |
+| `--m <int>` | |Yₘ| — discrete grid for endpoints |
+| `--index-base {0,1}` | Indexing base for `pos` / `unpos` (default: 0) |
+| `--seed <int>` | RNG seed for reproducibility |
+| `--quiet` | Less verbose output |
 
---index-base {0,1} # Indexing base for pos/unpos (default: 0)
+---
 
---seed <int> # RNG seed for reproducibility
 
---quiet # Less verbose output
+### 1️⃣ Rank (pos): DFN → integer index
 
-### Examples
+DFN given as JSON-like α-cuts `[[l0,r0],...,[l_{n-1},r_{n-1}]]`
 
-1) Rank (pos): DFN → integer index
-# DFN given as JSON-like α-cuts [[l0,r0],...,[l_{n-1},r_{n-1}]]
-python paper_algorithm_full_en_v7.py \
-  --rank \
-  --n 3 --m 5 \
-  --dfn "[[0,4],[1,3],[2,2]]" \
-  --engine tinc \
-  --index-base 0
+```bash
+python paper_algorithm_full_en_v7.py   --rank   --n 3 --m 5   --dfn "[[0,4],[1,3],[2,2]]"   --engine tinc   --index-base 0
+```
 
-2) Unrank (pos⁻¹): integer index → DFN  
-python paper_algorithm_full_en_v7.py \
-  --unrank \
-  --n 3 --m 5 \
-  --index 17 \
-  --engine tinc \
-  --index-base 0
+**Example Output:**
+```
+engine=tinc, n=3, m=5, base=0
+dfn = [[0, 4], [1, 3], [2, 2]]
+pos(dfn) = 17
+```
 
-3) Validate bijection on a range
+---
+
+### 2️⃣ Unrank (pos⁻¹): integer index → DFN
+
+```bash
+python paper_algorithm_full_en_v7.py   --unrank   --n 3 --m 5   --index 17   --engine tinc   --index-base 0
+```
+
+**Example Output:**
+```
+engine=tinc, n=3, m=5, base=0
+pos^{-1}(17) = [[0, 4], [1, 3], [2, 2]]
+```
+
+---
+
+### 3️⃣ Validate Bijection on a Range
+
+```bash
 # Full space (careful if N is large)
 python paper_algorithm_full_en_v7.py --validate --n 4 --m 6 --engine tinc
 
 # Sampled validation with fixed seed
 python paper_algorithm_full_en_v7.py --validate --n 10 --m 100 --trials 1000 --seed 123
+```
 
-4) Benchmark (micro/milli seconds)
-python paper_algorithm_full_en_v7.py \
-  --bench --engine tinc \
-  --n 10 --m_from 100 --m_to 1000 --m_step 100 \
-  --trials 500
+Checks that:
+```
+pos^{-1}(pos(x)) == x
+pos(pos^{-1}(i)) == i
+```
 
-# Fixed (n,m) with trials, export CSV
-python paper_algorithm_full_en_v7.py \
-  --bench --engine lex \
-  --n 6 --m 200 --trials 2000 \
-  --export bench_n6_m200_lex.csv
+---
+
+### 4️⃣ Benchmark (micro/milli seconds)
+
+#### Sweep over m
+```bash
+python paper_algorithm_full_en_v7.py   --bench --engine tinc   --n 10 --m_from 100 --m_to 1000 --m_step 100   --trials 500
+```
+
+#### Fixed (n, m) with trials, export CSV
+```bash
+python paper_algorithm_full_en_v7.py   --bench --engine lex   --n 6 --m 200 --trials 2000   --export bench_n6_m200_lex.csv
+```
+
+**Example Output:**
+```
+engine=tinc, n=10, trials=500
+m   N(DFN)   mean_us   p50_us   p95_us
+100  ...     42.8      41.9     55.2
+200  ...     84.1      82.7     108.3
+...
+```
+
+If `--export` is set, results are saved as a CSV file.
+
+---
+
+### 5️⃣ Input / Output Helpers
+
+#### Rank a list of DFNs from a JSON file
+```bash
+python paper_algorithm_full_en_v7.py   --rank --n 3 --m 5   --from-file dfn_list.json   --engine tinc
+```
+
+#### Unrank a list of indices from a text file
+```bash
+python paper_algorithm_full_en_v7.py   --unrank --n 3 --m 5   --from-file indices.txt   --engine tinc   --index-base 0   --export unranked.json
+```
+
+> `--from-file` automatically detects JSON arrays or newline-separated indices.  
+> `--export` writes results as JSON/CSV depending on the action.
+
+---
+
+### 6️⃣ Index Base Conversion (0 ↔ 1)
+
+```bash
+python paper_algorithm_full_en_v7.py   --rank --n 3 --m 5   --dfn "[[0,4],[1,3],[2,2]]"   --index-base 1
+```
+
+---
+
+### 7️⃣ Reproduce Figures or Tables (optional)
+
+```bash
+python paper_algorithm_full_en_v7.py   --repro figure-2   --n 6 --m 60   --engine tinc   --export fig2_data.csv
+```
+
+---
+
+### 🆘 Help
+
+```bash
+python paper_algorithm_full_en_v7.py --help
+```
+
+Displays all available flags, defaults, and usage examples.
+
+---
+7) Input/Output helpers
+
+# Rank a list of DFNs from a JSON file
+python paper_algorithm_full_en_v7.py --rank --n 3 --m 5 --from-file dfn_list.json --engine tinc
+
+# Unrank a list of indices from a text file (one index per line)
+python paper_algorithm_full_en_v7.py --unrank --n 3 --m 5 --from-file indices.txt --engine tinc --index-base 0 --export unranked.json
+
+8) Index base conversion (0↔1)
+# Convert pos result to 1-based
+python paper_algorithm_full_en_v7.py --rank --n 3 --m 5 --dfn "[[0,4],[1,3],[2,2]]" --index-base 1
+
+
+10) Reproduce figures/tables (optional)
+# If the script provides figure/table reproduction:
+python paper_algorithm_full_en_v7.py --repro figure-2 --n 6 --m 60 --engine tinc --export fig2_data.csv
+
+11) Help
+python paper_algorithm_full_en_v7.py --help
 
 
 ## 📚 References
 
 If you use this repository, please cite the following work:
 
-> **[Author(s)], "Ranking and Unranking of Discrete Fuzzy Numbers via α-cuts and Interval Orders," 2024.**  
-> *Preprint or conference version, 2024.*  
-> DOI: *(to be added upon publication)*  
+> **[Mir, Mus, Riera (In prep.)], "An Efficient Computational Framework for Discrete Fuzzy Numbers Based on Admissible Orders**  
+> DOI: *(to be added upon publication)*
+> bibtex *(to be added upon publication)*
 
-**Additional related works:**
-- [1] R. Fullér and P. Majlender, *On obtaining ranking from fuzzy numbers by maximizing similarity measures*, Fuzzy Sets and Systems, 2001.  
-- [2] S. Bustince et al., *Interval-valued fuzzy sets and their applications*, Information Sciences, 2013.  
-- [3] K. Atanassov, *Intuitionistic Fuzzy Sets: Theory and Applications*, 1999.  
-- [4] [Your Paper/Presentation Title], *FSTA 2024 proceedings*, 2024.
 
 ---
 
