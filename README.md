@@ -127,8 +127,8 @@ python paper_algorithm_full_en_v7.py [ACTION FLAGS] [OPTIONS]
 | Flag | Description |
 |------|--------------|
 | `--engine {tinc,lex,rev}` | Interval order / engine (default: `tinc`) |
-| `--n <int>` | |Lₙ| — number of α-cuts / levels |
-| `--m <int>` | |Yₘ| — discrete grid for endpoints |
+| `--n <int>` | |L_n| — number of α-cuts / levels |
+| `--m <int>` | |Y_m| — discrete grid for endpoints |
 | `--index-base {0,1}` | Indexing base for `pos` / `unpos` (default: 0) |
 | `--seed <int>` | RNG seed for reproducibility |
 | `--quiet` | Less verbose output |
@@ -248,29 +248,6 @@ python paper_algorithm_full_en_v7.py   --repro figure-2   --n 6 --m 60   --engin
 ```bash
 python paper_algorithm_full_en_v7.py --help
 ```
-
-Displays all available flags, defaults, and usage examples.
-
----
-7) Input/Output helpers
-
-# Rank a list of DFNs from a JSON file
-python paper_algorithm_full_en_v7.py --rank --n 3 --m 5 --from-file dfn_list.json --engine tinc
-
-# Unrank a list of indices from a text file (one index per line)
-python paper_algorithm_full_en_v7.py --unrank --n 3 --m 5 --from-file indices.txt --engine tinc --index-base 0 --export unranked.json
-
-8) Index base conversion (0↔1)
-# Convert pos result to 1-based
-python paper_algorithm_full_en_v7.py --rank --n 3 --m 5 --dfn "[[0,4],[1,3],[2,2]]" --index-base 1
-
-
-10) Reproduce figures/tables (optional)
-# If the script provides figure/table reproduction:
-python paper_algorithm_full_en_v7.py --repro figure-2 --n 6 --m 60 --engine tinc --export fig2_data.csv
-
-11) Help
-python paper_algorithm_full_en_v7.py --help
 
 
 ## 📚 References
