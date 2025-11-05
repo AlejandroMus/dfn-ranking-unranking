@@ -43,7 +43,7 @@ where \(l_i, r_i \in Y_m\) and \(l_i \leq r_i\).
 dfns can also be written in the **standard fuzzy-set notation** used in the literature:
 
 \[
-x = \{\, dfn(0)/0,\, dfn(1)/1,\, \dots,\, dfn(n)/n \,\}
+x = \{\ dfn(0)/0,\, dfn(1)/1, \dots, dfn(n)/n \}
 \]
 
 or equivalently:
