@@ -8,17 +8,17 @@ This repository contains the **reference Python implementation** of the algorith
 
 > **"An Efficient Computational Framework for Discrete Fuzzy Numbers Based on Admissible Orders"**
 
-The goal of this work is to establish a **bijective mapping** between *Discrete Fuzzy Numbers (DFNs)* and a contiguous integer index set  
+The goal of this work is to establish a **bijective mapping** between *Discrete Fuzzy Numbers (dfns)* and a contiguous integer index set  
 \[
 \{0, 1, \dots, N-1\},
 \]
-where \(N\) is the number of DFNs defined over a discrete support \(L_n \to Y_m\).
+where \(N\) is the number of dfns defined over a discrete support \(L_n \to Y_m\).
 
 The mapping is achieved through the **ranking** (`pos`) and **unranking** (`pos⁻¹`) functions based on:
-- α-cut representations of DFNs,
+- α-cut representations of dfns,
 - a general **interval order** (e.g., *t-inc*, *lexicographic*, or any admissible total order).
 
-This bijection allows DFNs to be:
+This bijection allows dfns to be:
 - **Enumerated**, **compared**, and **stored** efficiently,
 - **Sampled** uniformly from the discrete fuzzy space,
 - **Serialized** and **reconstructed** exactly without information loss.
@@ -27,18 +27,45 @@ This bijection allows DFNs to be:
 
 ## 🧮 Key Concepts
 
-### 1. Discrete Fuzzy Numbers (DFN)
-A DFN is a fuzzy number defined on a discrete finite lattice \(L_n = \{0, \frac{1}{n-1}, \dots, 1\}\).  
-Each α-cut of a DFN is represented by a **closed interval** of indices from \(Y_m = \{0, \frac{1}{m-1}, \dots, 1\}\).
+### 1. Discrete Fuzzy Numbers (dfn)
+A dfn is a fuzzy number defined on a discrete finite lattice \(L_n = \{0, \frac{1}{n-1}, \dots, 1\}\).  
+Each α-cut of a dfn is represented by a **closed interval** of indices from \(Y_m = \{0, \frac{1}{m-1}, \dots, 1\}\).
 
 ### 2. α-cut Representation
-Each DFN can be represented as a finite sequence of α-cuts:
+Each dfn can be represented as a finite sequence of α-cuts:
 \[
 x = [ [l_0, r_0], [l_1, r_1], \dots, [l_{n-1}, r_{n-1}] ],
 \]
 where \(l_i, r_i \in Y_m\) and \(l_i \leq r_i\).
 
-### 3. Admissible Interval Orders
+### 3. Canonical Membership Representation (μ-form)
+
+dfns can also be written in the **standard fuzzy-set notation** used in the literature:
+
+\[
+x = \{\, dfn(0)/0,\, dfn(1)/1,\, \dots,\, dfn(n)/n \,\}
+\]
+
+or equivalently:
+\[
+x = \{ (y_0 / \alpha_0), (y_1 / \alpha_1), \dots, (y_n / \alpha_n) \}
+\]
+
+where each pair \((y_i, \alpha_i)\) expresses the **membership degree** \(\alpha_i \in L_n\) associated to the discrete support value \(y_i \in Y_m\).
+
+
+Internally, the library automatically converts this μ-representation into its corresponding **α-cut form** to perform ranking and unranking operations.  
+Hence, both forms are fully supported:
+
+| Representation | Example | Description |
+|----------------|----------|--------------|
+| α-cut | `[[0,4],[1,3],[2,2]]` | Internal interval-based form |
+| μ-form | `{0/0, 1/1, 2/1}` or JSON: `{"0":0, "1":1, "2":1}` | Standard membership form |
+
+You can input dfns in either form — the system will normalize them internally.
+
+
+### 4. Admissible Interval Orders
 The order relation between α-cuts can be defined in several ways:
 - **t-inc** (Total increasing order)
 - **lexicographic order**
@@ -51,7 +78,7 @@ The repository allows you to plug in any order that satisfies monotonicity and c
 
 ## ⚙️ Features
 
-✅ Exact **ranking (pos)** and **unranking (pos⁻¹)** of DFNs  
+✅ Exact **ranking (pos)** and **unranking (pos⁻¹)** of dfns  
 ✅ Works with **any admissible interval order** (default: *t-inc*, implemented: *t-inc*, *lex1*, *lex2*)  
 ✅ Efficient computation via **α-cut decomposition**  
 ✅ Support for **0-based or 1-based indexing**  
@@ -77,7 +104,7 @@ pip install numpy
 The algorithms are based on the following principles:
 
 1. **α-cut decomposition**  
-   Each Discrete Fuzzy Number (DFN) is represented as a finite sequence of α-cuts:
+   Each Discrete Fuzzy Number (dfn) is represented as a finite sequence of α-cuts:
    \[
    x = [ [l_0, r_0], [l_1, r_1], \dots, [l_{n-1}, r_{n-1}] ],
    \]
@@ -89,8 +116,8 @@ The algorithms are based on the following principles:
    These orders must satisfy *monotonicity* and *compatibility* with the fuzzy lattice structure.
 
 3. **Bijection construction**  
-   The ranking (`pos`) function defines a unique integer index for every DFN, while  
-   the unranking (`pos⁻¹`) function reconstructs the DFN from that index:
+   The ranking (`pos`) function defines a unique integer index for every dfn, while  
+   the unranking (`pos⁻¹`) function reconstructs the dfn from that index:
    \[
    \text{pos}: DFN(n,m) \rightarrow \{0, \ldots, N-1\}, \quad
    \text{pos}^{-1}: \{0, \ldots, N-1\} \rightarrow DFN(n,m)
@@ -136,9 +163,9 @@ python paper_algorithm_full_en_v7.py [ACTION FLAGS] [OPTIONS]
 ---
 
 
-### 1️⃣ Rank (pos): DFN → integer index
+### 1️⃣ Rank (pos): dfn → integer index
 
-DFN given as JSON-like α-cuts `[[l0,r0],...,[l_{n-1},r_{n-1}]]`
+dfn given as JSON-like α-cuts `[[l0,r0],...,[l_{n-1},r_{n-1}]]`
 
 ```bash
 python paper_algorithm_full_en_v7.py   --rank   --n 3 --m 5   --dfn "[[0,4],[1,3],[2,2]]"   --engine tinc   --index-base 0
@@ -153,7 +180,7 @@ pos(dfn) = 17
 
 ---
 
-### 2️⃣ Unrank (pos⁻¹): integer index → DFN
+### 2️⃣ Unrank (pos⁻¹): integer index → dfn
 
 ```bash
 python paper_algorithm_full_en_v7.py   --unrank   --n 3 --m 5   --index 17   --engine tinc   --index-base 0
@@ -200,7 +227,7 @@ python paper_algorithm_full_en_v7.py   --bench --engine lex   --n 6 --m 200 --tr
 **Example Output:**
 ```
 engine=tinc, n=10, trials=500
-m   N(DFN)   mean_us   p50_us   p95_us
+m   N(dfn)   mean_us   p50_us   p95_us
 100  ...     42.8      41.9     55.2
 200  ...     84.1      82.7     108.3
 ...
@@ -212,7 +239,7 @@ If `--export` is set, results are saved as a CSV file.
 
 ### 5️⃣ Input / Output Helpers
 
-#### Rank a list of DFNs from a JSON file
+#### Rank a list of dfns from a JSON file
 ```bash
 python paper_algorithm_full_en_v7.py   --rank --n 3 --m 5   --from-file dfn_list.json   --engine tinc
 ```
