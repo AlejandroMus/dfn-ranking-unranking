@@ -170,11 +170,11 @@ def _lex1(I, J):
 
 The script supports three general modes:
 
-- **`ranking`**  
+- **`unranking`**  
   Computes a discrete fuzzy number from a given index.
 
-- **`unranking`**  
-  Returns the index of a fuzzy number within its ordered chain.
+- **`ranking`**  
+      Returns the index of a discrete fuzzy number within its ordered chain.
 
 - **`bench`**  
   Performs a time benchmark by exploring different values for the chain length and membership levels.
