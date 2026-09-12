@@ -1,7 +1,7 @@
 
 # coding: utf-8
 from math import comb
-from functools import cmp_to_key
+from functools import cmp_to_key, lru_cache
 
 try:
     import engine as _user_engine  # engine.py en el mismo directorio
@@ -17,10 +17,11 @@ def _interval_cmp_lex1(a, b, adj):
     return (A > B) - (A < B)
 
 def _interval_cmp_lex2(a, b, adj):
+    """Order [a,b] by (b,a), both coordinates ascending."""
     La, Ra = a
     Lb, Rb = b
-    A = (adj - Ra - 1, -La)
-    B = (adj - Rb - 1, -Lb)
+    A = (adj - Ra - 1, La)
+    B = (adj - Rb - 1, Lb)
     return (A > B) - (A < B)
 
 def _interval_cmp_xy(a, b, adj):
@@ -86,6 +87,7 @@ def _interval_cmp_engine(a, b, adj):
 
 
 
+@lru_cache(maxsize=None)
 def _order_groups(n, m, comparator_name):
     """List all (L,R,C) blocks in ∆-up order by the core interval I_1 (top α-cut)."""
     adj = n + 1
@@ -114,45 +116,77 @@ def _order_groups(n, m, comparator_name):
         raise ValueError(f"Unknown comparator_name={comparator_name!r} in _order_groups")
 
 
-    return sorted(groups, key=cmp_to_key(cmp))
+    return tuple(sorted(groups, key=cmp_to_key(cmp)))
 
 
-def _nested_unrank_in_group(L, R, m, rem, left_first):
-    """Choose (ell_t, rr_t) at each level t from y_s-1 .. 1 using the stars-and-bars counts."""
+def preprocess_order(n, m, comparator_name):
+    """Build and cache order-dependent blocks before amortized query timing."""
+    return _order_groups(n, m, comparator_name)
+
+
+def clear_order_cache():
+    """Clear cached interval groups for reproducible cold-start measurements."""
+    _order_groups.cache_clear()
+
+
+def _ordered_containing_intervals(n, left, right, comparator_name):
+    """Yield intervals containing [left,right] in the requested order."""
+    if comparator_name == "lex1":
+        return ((a, b) for a in range(left + 1) for b in range(right, n + 1))
+    if comparator_name == "lex2":
+        return ((a, b) for b in range(right, n + 1) for a in range(left + 1))
+    if comparator_name == "xy":
+        def xy_intervals():
+            for endpoint_sum in range(right, left + n + 1):
+                max_a = min(left, endpoint_sum - right)
+                min_a = max(0, endpoint_sum - n)
+                for a in range(max_a, min_a - 1, -1):
+                    yield a, endpoint_sum - a
+        return xy_intervals()
+    if comparator_name == "engine":
+        adj = n + 1
+        intervals = [
+            (a, b) for a in range(left + 1) for b in range(right, n + 1)
+        ]
+        return iter(sorted(
+            intervals,
+            key=cmp_to_key(lambda first, second: _interval_cmp_engine(
+                (first[0], n - first[1]),
+                (second[0], n - second[1]),
+                adj,
+            )),
+        ))
+    raise ValueError(f"Unknown comparator_name={comparator_name!r}")
+
+
+def _nested_unrank_in_group(n, L, R, m, rem, comparator_name):
+    """Choose all lower cuts in the selected interval order."""
     y_s = m - 1
     if y_s <= 1:
-        return [0]*y_s, [0]*y_s
-    Lext = [0]*y_s
-    Rext = [0]*y_s
+        return [0] * y_s, [0] * y_s
+    Lext = [0] * y_s
+    Rext = [0] * y_s
     ell_prev = r_prev = 0
-    for t in range(y_s-1, 0, -1):
+    core_right = n - R
+    for t in range(y_s - 1, 0, -1):
         remaining = t - 1
-        found = False
-        if left_first:
-            for ell in range(L, ell_prev - 1, -1):      # left desc
-                for rr in range(r_prev, R + 1):         # right asc
-                    cnt = comb((L - ell) + remaining, remaining) * comb((R - rr) + remaining, remaining)
-                    if rem >= cnt:
-                        rem -= cnt
-                    else:
-                        Lext[t], Rext[t] = ell, rr
-                        ell_prev, r_prev = ell, rr
-                        found = True
-                        break
-                if found: break
+        previous_left = L - ell_prev
+        previous_right = core_right + r_prev
+        candidates = _ordered_containing_intervals(
+            n, previous_left, previous_right, comparator_name
+        )
+        for a, b in candidates:
+            count = comb(a + remaining, remaining) * comb(
+                (n - b) + remaining, remaining
+            )
+            if rem >= count:
+                rem -= count
+                continue
+            ell, rr = L - a, b - core_right
+            Lext[t], Rext[t] = ell, rr
+            ell_prev, r_prev = ell, rr
+            break
         else:
-            for rr in range(r_prev, R + 1):             # right asc
-                for ell in range(L, ell_prev - 1, -1):  # left desc
-                    cnt = comb((L - ell) + remaining, remaining) * comb((R - rr) + remaining, remaining)
-                    if rem >= cnt:
-                        rem -= cnt
-                    else:
-                        Lext[t], Rext[t] = ell, rr
-                        ell_prev, r_prev = ell, rr
-                        found = True
-                        break
-                if found: break
-        if not found:
             raise RuntimeError("rem desfasado dentro del bloque.")
     return Lext, Rext
 
@@ -187,8 +221,6 @@ def unrank_dfn_cuts(n, m, idx, comparator_name="lex1"):
     """Global unranking → DFN for index idx using the nested-cuts method only (no heap)."""
     if comparator_name not in ("lex1", "lex2", "xy", "engine"):
         raise ValueError("comparator_name debe ser 'lex1', 'lex2', 'xy' or 'engine'")
-    # Para XY y engine usamos la misma exploración interna que lex1 (left-first)
-    left_first = (comparator_name in ("lex1", "xy", "engine"))
     groups_sorted = _order_groups(n, m, comparator_name)
     rem = idx
     chosen = None
@@ -199,7 +231,9 @@ def unrank_dfn_cuts(n, m, idx, comparator_name="lex1"):
     if chosen is None:
         raise IndexError("idx fuera de rango")
     L, R, C, _ = chosen
-    Lext, Rext = _nested_unrank_in_group(L, R, m, rem, left_first)
+    Lext, Rext = _nested_unrank_in_group(
+        n, L, R, m, rem, comparator_name
+    )
     return _rebuild_seq_from_ext(n, L, R, C, m, Lext, Rext)
 
 def _extract_ext_from_seq(seq, n, m):
@@ -228,43 +262,33 @@ def _extract_ext_from_seq(seq, n, m):
             Rext[u] = max(Rext[u], d)
     return L, R, C, Lext, Rext
 
-def _rank_in_group_from_ext(L, R, m, Lext, Rext, comparator_name):
-    """Compute the intra-block rank (rem) from the chosen extensions, mirroring the unrank loops."""
+def _rank_in_group_from_ext(n, L, R, m, Lext, Rext, comparator_name):
+    """Compute the intra-block rank using the selected order at every cut."""
     y_s = m - 1
     if y_s <= 1:
         return 0
-    left_first = (comparator_name in ("lex1", "xy", "engine"))
     rem = 0
     ell_prev = r_prev = 0
-    # iterate same search order, summing counts for candidates strictly before the chosen pair
-    for t in range(y_s-1, 0, -1):
+    core_right = n - R
+    for t in range(y_s - 1, 0, -1):
         remaining = t - 1
         target_ell = Lext[t]
-        target_rr  = Rext[t]
-        if left_first:
-            # scan ell desc, rr asc
-            for ell in range(L, ell_prev - 1, -1):
-                for rr in range(r_prev, R + 1):
-                    if (ell, rr) == (target_ell, target_rr):
-                        ell_prev, r_prev = ell, rr
-                        break
-                    cnt = comb((L - ell) + remaining, remaining) * comb((R - rr) + remaining, remaining)
-                    rem += cnt
-                else:
-                    continue
+        target_rr = Rext[t]
+        previous_left = L - ell_prev
+        previous_right = core_right + r_prev
+        candidates = _ordered_containing_intervals(
+            n, previous_left, previous_right, comparator_name
+        )
+        target = (L - target_ell, core_right + target_rr)
+        for a, b in candidates:
+            if (a, b) == target:
+                ell_prev, r_prev = target_ell, target_rr
                 break
+            rem += comb(a + remaining, remaining) * comb(
+                (n - b) + remaining, remaining
+            )
         else:
-            # scan rr asc, ell desc
-            for rr in range(r_prev, R + 1):
-                for ell in range(L, ell_prev - 1, -1):
-                    if (ell, rr) == (target_ell, target_rr):
-                        ell_prev, r_prev = ell, rr
-                        break
-                    cnt = comb((L - ell) + remaining, remaining) * comb((R - rr) + remaining, remaining)
-                    rem += cnt
-                else:
-                    continue
-                break
+            raise ValueError(f"cut {target} is absent from the interval order")
     return rem
 
 def rank_dfn_cuts(n, m, seq, comparator_name="lex1"):
@@ -281,7 +305,9 @@ def rank_dfn_cuts(n, m, seq, comparator_name="lex1"):
             break
         idx += size
     # intra-block offset
-    idx += _rank_in_group_from_ext(L, R, m, Lext, Rext, comparator_name)
+    idx += _rank_in_group_from_ext(
+        n, L, R, m, Lext, Rext, comparator_name
+    )
     return idx
 
 def total_dfns(n, m):
