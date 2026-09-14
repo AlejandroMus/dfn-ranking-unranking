@@ -378,6 +378,27 @@ Invalid DFN (subindex):
 
 ## Benchmarks and plots
 
+### Reproducing Figures 1–4
+
+The raw measurements used to produce the four figures in the paper are provided
+in `paper_figures/csvs/`. Therefore, the figures can be regenerated without
+running the benchmarks again. From the repository root, run:
+
+```bash
+cd paper_figures
+python plot_benchmark_results.py --data-dir csvs --outdir plots
+```
+
+The command creates both PDF and PNG versions of the figures in `paper_figures/plots/`:
+
+- `figure_scaling` (Figure 1),
+- `figure_orders` (Figure 2),
+- `figure_baseline` (Figure 3), and
+- `figure_baseline_memory` (Figure 4).
+
+It also creates the corresponding CSV and LaTeX tables, together with a short
+summary of the benchmark results.
+
 To run timing benchmarks over a range of `m` values, you can use commands like:
 
 ```bash
